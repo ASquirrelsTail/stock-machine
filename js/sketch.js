@@ -9,12 +9,13 @@ let backgroundCol = 120;
 
 // Coin that flys from start point to end point
 class Coin {
-	constructor(startX, startY) {
+	constructor(startX, startY, value) {
 		this.position = createVector(startX, startY);
 		this.target = createVector(50, 50);
 		this.velocity = p5.Vector.random2D().mult(Math.random() * 30);
 		this.acceleration = createVector(0, 0);
 		this.friction = 0.9;
+		this.value = value;
 		this.live = true;
 		
 	}
@@ -30,7 +31,7 @@ class Coin {
 			this.velocity = createVector(0, 0);
 			this.live = false;
 			dollar.radius += 3;
-			score += 5;
+			score += this.value;
 		}
 	}
 
@@ -45,7 +46,7 @@ class Coin {
 //Button class, has position, radius, color(NF), label and onClick function
 class Button {
 	constructor(posX, posY, radius, color, label = "", onClick = () => {}) {
-		this.position = createVector(posX, posY);
+		this.position = {x: posX, y: posY};
 		this.radius = radius;
 		this.color = color;
 		this.label = label;
@@ -85,8 +86,8 @@ class Chart {
 	draw() {
 		fill(backgroundCol);
 		noStroke();
-		rect(this.position.x -50, this.position.y, 50, this.height + 10);
-		rect(this.position.x + this.width, this.position.y, 50, this.height + 10);
+		rect(this.position.x -50, this.position.y - 10, 50, this.height + 20);
+		rect(this.position.x + this.width, this.position.y - 10, 50, this.height + 20);
 
 		strokeWeight(3);
 		stroke(0);
@@ -107,7 +108,7 @@ class Chart {
 
 		beginShape();
 		for(let i = 0; i < line.length; i++) {
-			vertex((i * interval) + this.position.x - ((date.seconds() / 86400000) * interval), this.position.y + this.height - line[i]);
+			vertex((i * interval) + this.position.x - ((date.seconds() / 86400000) * interval), this.position.y + this.height - (line[i] / 200 * this.height));
 		}
 		endShape();
 	}
@@ -115,19 +116,27 @@ class Chart {
 
 
 class Stock {
-	constructor(name, value, volatility, trend, color) {
+	constructor(name, value, volatility, trend, color, posX, posY) {
 		this.name = name;
 		this.values = [value];
 		this.volatility = volatility;
 		this.trend = trend;
 		this.color = color;
 		this.shares = 0;
+		this.drawPos = {x: posX, y: posY};
+
+		this.buyButton = new Button(posX - 50, posY + 80, 30, [210, 40, 40], "BUY!", () => this.buy());
+		this.sellButton = new Button(posX + 50, posY + 80, 30, [210, 40, 40], "SELL!", () => this.sell());
 
 		for (let i = 0; i < 49; i++) this.addValue();
 	}
 
+	getValue() {
+		return this.values[this.values.length - 1]
+	}
+
 	addValue() {
-		let newValue = this.values[this.values.length - 1] + (Math.random() * this.volatility) - (this.volatility / 2) + this.trend;
+		let newValue = this.getValue() + (Math.random() * this.volatility) - (this.volatility / 2) + this.trend;
 		if (newValue < 1) newValue = 1;
 		else if (newValue > 200) newValue = 200;
 
@@ -136,11 +145,48 @@ class Stock {
 
 	draw() {
 		chart.drawLine(this.values, color(this.color));
+
+		fill(255);
+		stroke(0);
+		strokeWeight(4);
+		rect(this.drawPos.x - 25, this.drawPos.y, 70, 40, 10);
+		
+		fill(0);
+		strokeWeight(2);
+		textSize(20);
+		textAlign(RIGHT);
+		text("$" + Math.floor(this.getValue()), this.drawPos.x - 25, this.drawPos.y + 5, 65, 30);
+		textAlign(CENTER);
+
+		text(this.name, this.drawPos.x - 25, this.drawPos.y - 40);
+		text("Shares: " + this.shares, this.drawPos.x - 25, this.drawPos.y - 80);
+		
+		fill(color(this.color));
+		noStroke();
+		rect(this.drawPos.x - 50, this.drawPos.y - 40, 35, 35, 10);
+
+		this.buyButton.draw();
+		this.sellButton.draw();
 	}
 
 	update() {
 		this.values.splice(0, 1);
 		this.addValue();
+	}
+
+	buy() {
+		if (score > this.getValue()) {
+			this.shares++;
+			score -= this.getValue();
+		}
+	}
+
+	sell() {
+		if (this.shares > 0) {
+			this.shares--;
+			for (let i = 0; i < Math.floor(this.getValue() / 50); i++) coins.push(new Coin(mouseX, mouseY, 50));
+			coins.push(new Coin(mouseX, mouseY, this.getValue() % 50))
+		}
 	}
 }
 
@@ -276,11 +322,10 @@ let news = {
 
 let score = 1000000;
 
-let button;
 let chart = new Chart(100, 100, 1080, 300);
-let gold = new Stock("Gold", 93, 20, 0.3, "#00C7FF");
-let oil = new Stock("Oil", 60, 60, 0.1, "#05F94B");
-let tech =  new Stock("Technology", 120, 40, -0.3, "#FF7732");
+let gold = new Stock("Gold", 93, 20, 0.3, "#00C7FF", 200, 500);
+let oil = new Stock("Oil", 60, 60, 0.1, "#05F94B", 500, 500);
+let tech =  new Stock("Technology", 120, 40, -0.3, "#FF7732", 800, 500);
 
 let coins = new EntityArray();
 coins.preDraw = function() {
@@ -299,7 +344,6 @@ function setup() {
 	strokeCap(ROUND);
 	strokeJoin(ROUND);
 	textAlign(CENTER, CENTER);
-	button = new Button(100, 500, 30, [210, 40, 40], "Sell!", function() {coins.push(new Coin(this.position.x, this.position.y))});
 }
 
 
@@ -316,7 +360,6 @@ function draw() {
 	tech.draw();
 	gold.draw();
 	chart.draw();
-	button.draw();
 	coins.draw();
 
 	dollar.draw();
