@@ -188,7 +188,7 @@ class Stock {
 	}
 
 	getValue() {
-		return this.values[this.values.length - 2]
+		return this.values[this.values.length - 2];
 	}
 
 	draw() {
@@ -372,12 +372,36 @@ let date = {
 
 
 let news = {
+	messagePos: 0,
+	message: "The biggest stories as they happen!",
+
 	draw: function() {
-		fill(255);
+
+		fill(0);
+		noStroke();
+		textSize(20);
+		textAlign(LEFT);
+		text(this.message, 1210 - this.messagePos, 50);
+
+		this.messagePos++;
+		if (this.messagePos > 560 + textWidth(this.message)) {
+			this.messagePos = 0;
+
+			let nextMessage = Math.floor(Math.random() * newsStories.length);
+			this.message = newsStories[nextMessage].story;
+			if (newsStories[nextMessage].remove) newsStories.splice(nextMessage, 1);
+		}
+
+		textAlign(CENTER);
+
+		fill(backgroundCol);
+		rect(0 , 0, 480, 80);
+		rect(1210 , 0, 70, 80);
+
 		stroke(0);
 		strokeWeight(4);
+		noFill();
 		rect(460, 30, 750, 40, 10);
-
 		fill(color("#E33D1B"));
 		rect(460, 30, 200, 40, 10, 0, 0, 10);
 	
@@ -425,9 +449,10 @@ function setup() {
 function draw() {
 	background(backgroundCol);
 
+	news.draw();
 	drawScore();
 	date.draw();
-	news.draw();
+	
 
 	
 	oil.draw();
