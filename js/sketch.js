@@ -98,6 +98,14 @@ class Chart {
 		this.position = {x: posX, y: posY};
 		this.width = width;
 		this.height = height;
+		this.months = [];
+
+		let monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+		let daysInPrevMonth = [31, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30];
+		this.months.push({label: monthNames[date.today.getMonth()] + " " + (date.today.getYear() % 100), position: date.today.getDate()});
+		if (49 - date.today.getDate() > daysInPrevMonth[date.today.getMonth()]) {
+			this.months.push({label: monthNames[(date.today.getMonth() + 11) % 12] + " " + ((date.today.getYear() - 1 + Math.ceil(date.today.getMonth()  / 12)) % 100), position: date.today.getDate() + daysInPrevMonth[date.today.getMonth()]});
+		}
 	}
 
 	draw() {
@@ -131,9 +139,9 @@ class Chart {
 		line(this.position.x + this.width, this.position.y + this.height, this.position.x  + this.width + 5, this.position.y + this.height);
 
 		textAlign(RIGHT);
-		textSize(10);
+		textSize(16);
 		fill(0);
-		noStroke();
+		strokeWeight(1);
 		text("£300", this.position.x - 10, this.position.y);
 		text("£200", this.position.x - 10, this.position.y + (this.height / 3));
 		text("£100", this.position.x - 10, this.position.y + 2 * (this.height / 3));
@@ -144,6 +152,19 @@ class Chart {
 		text("£100", this.position.x + this.width + 10, this.position.y + 2 * (this.height / 3));
 		text("£0", this.position.x + this.width + 10, this.position.y + this.height);
 		textAlign(CENTER);
+
+		//Draw month markers
+		textSize(16);
+		stroke(0);
+		for (let i = 0; i < this.months.length; i++) {
+			let xPos = this.position.x + this.width - ((this.months[i].position - 1) * (this.width / 48)) - ((date.seconds() / 86400000) * (this.width / 48));
+			strokeWeight(1);
+			text(this.months[i].label, xPos, this.position.y + this.height + 18);
+			strokeWeight(4);
+			line(xPos, this.position.y + this.height, xPos, this.position.y + this.height + 5);
+			
+		}
+		
 	}
 
 	drawLine(line, color) {
@@ -157,6 +178,21 @@ class Chart {
 			vertex((i * interval) + this.position.x - ((date.seconds() / 86400000) * interval), this.position.y + this.height - (line[i] / 300 * this.height));
 		}
 		endShape();
+	}
+
+	newMonth(month, year) {
+		let monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+		this.months.push({label: monthNames[month] + " " + (year % 100), position: 0});
+	}
+
+	update() {
+		for (let i = 0; i < this.months.length; i++) {
+			this.months[i].position++;
+			if (this.months[i].position > 48) {
+				this.months.splice(i, 1);
+				i--;
+			}
+		}
 	}
 }
 
@@ -363,13 +399,16 @@ let date = {
 		this.today.setMinutes(0);
 		this.today.setHours(0);
 		this.startofDay = this.today.getTime();
+		this.startDate = this.startofDay;
 	},
 
 	draw: function() {
 		let oldDate = this.today.getDate();
 		this.today.setMinutes(this.today.getMinutes() + 20);
 
-		if (this.today.getDate() != oldDate) this.newDay();
+		if (this.today.getDate() != oldDate) {
+			this.newDay(this.today.getDate());
+		}
 
 		fill(255);
 		stroke(0);
@@ -386,9 +425,12 @@ let date = {
 		return this.today.getTime() - this.startofDay;
 	},
 
-	newDay: function() {
+	newDay: function(day) {
+		if (day == 1) chart.newMonth(this.today.getMonth(), this.today.getYear());
+		
 		this.startofDay = this.today.getTime();
 
+		chart.update();
 		gold.update();
 		oil.update();
 		tech.update();
@@ -447,10 +489,12 @@ let news = {
 // Game Variables
 let score = 1000;
 
-let chart = new Chart(100, 100, 1080, 400);
-let gold = new Stock("Gold", 93, 20, 0.3, 60, 250, "#FF7732", 240, 550);
-let oil = new Stock("Oil", 60, 60, 0.1, 30, 150, "#B125D9", 540, 550);
-let tech =  new Stock("Tech", 120, 40, -0.3, 20, 200, "#00AAFF", 840, 550);
+let chart = new Chart(100, 120, 1080, 400);
+let gold = new Stock("Gold", 70, 20, 0.3, 60, 250, "#FF7732", 240, 570);
+let oil = new Stock("Oil", 60, 60, 0.1, 30, 150, "#B125D9", 540, 570);
+let tech =  new Stock("Tech", 120, 40, -0.3, 20, 200, "#00AAFF", 840, 570);
+
+let restartButton = new Button(canvasX / 2, 500, 60, "#00DB21", "Restart", () => location.reload());
 
 let coins = new EntityArray();
 coins.preDraw = function() {
@@ -494,12 +538,14 @@ function draw() {
 		stroke(0);
 		strokeWeight(8);
 		fill(255);
-		rect(150, 340, 980, 120, 20);
+		rect(150, 250, 980, 160, 20);
 		textSize(50);
 		fill(0);
-		
 		strokeWeight(3);
-		text("Congratulations! You made $1,000,000!", canvasX / 2, canvasY / 2);
+		text("Congratulations! You made $1,000,000!", canvasX / 2, 310);
+		textSize(30);
+		text("It took you " + Math.floor((date.startofDay - date.startDate) / 86400000) + " days!", canvasX / 2, 360);
+		restartButton.draw();
 	}
 
 }
