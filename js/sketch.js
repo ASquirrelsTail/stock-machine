@@ -1,9 +1,7 @@
 //Global Variables
-
 let canvasX = 1280;
 let canvasY = 800;
 let targetFrameRate = 60;
-let canvasCenter;
 let backgroundCol = 255;
 
 
@@ -164,14 +162,20 @@ class Chart {
 
 
 class Stock {
-	constructor(name, value, volatility, trend, color, posX, posY) {
+	constructor(name, value, volatility, trend, lowerBound, upperBound, color, posX, posY) {
 		this.name = name;
 		this.values = [value];
 		this.volatility = volatility;
 		this.trend = trend;
+		this.lowerBound = lowerBound;
+		this.upperBound = upperBound;
 		this.color = color;
 		this.shares = 0;
 		this.drawPos = {x: posX, y: posY};
+
+		this.tempTrendTimer = 0;
+		this.tempTrend = 0;
+		this.tempVolatility = 0;
 
 		this.buyButton = new Button(posX + 50, posY + 130, 40, "#00DB21", "BUY!", () => this.buy());
 		this.sellButton = new Button(posX + 150, posY + 130, 40, "#E33D1B", "SELL!", () => this.sell());
@@ -180,7 +184,20 @@ class Stock {
 	}
 
 	addValue() {
-		let newValue = this.values[this.values.length - 1] + (Math.random() * this.volatility) - (this.volatility / 2) + this.trend;
+		let volatility = this.volatility;
+		let trend = this.trend;
+		let currentValue = this.values[this.values.length - 1];
+		
+		if (this.tempTrendTimer > 0) {
+			this.tempTrendTimer--;
+			volatility = this.tempVolatility;
+			trend = this.tempTrend;
+		}else{
+			if (currentValue < this.lowerBound) trend += volatility / 3;
+			else if (currentValue > this.upperBound) trend -= volatility / 3;
+		}
+
+		let newValue = currentValue + (Math.random() * volatility) - (volatility / 2) + trend;
 		if (newValue < 1) newValue = 1;
 		else if (newValue > 300) newValue = 300;
 
@@ -189,6 +206,12 @@ class Stock {
 
 	getValue() {
 		return this.values[this.values.length - 2];
+	}
+
+	adjust(volatility, trend, timer) {
+		this.tempVolatility = volatility;
+		this.tempTrend = trend;
+		this.tempTrendTimer = timer;
 	}
 
 	draw() {
@@ -249,8 +272,8 @@ class Stock {
 			}
 		}
 		if (profit > 0) {
-			for (let i = 0; i < Math.floor(profit / 1000); i++) coins.push(new Coin(mouseX, mouseY, 1000));
-			coins.push(new Coin(mouseX, mouseY, this.getValue() % 1000));
+			//for (let i = 0; i < Math.floor(profit / 1000); i++) coins.push(new Coin(mouseX, mouseY, 1000));
+			coins.push(new Coin(mouseX, mouseY, profit));
 			result = true;
 		}
 		return result;
@@ -302,6 +325,7 @@ function drawScore() {
 	textAlign(CENTER);
 }
 
+
 let dollar = {
 	radius: 25,
 
@@ -328,6 +352,7 @@ let dollar = {
 		resetMatrix();
 	}
 }
+
 
 let date = {
 	today: new Date(),
@@ -373,6 +398,7 @@ let date = {
 
 let news = {
 	messagePos: 0,
+	storyIndex: false,
 	message: "The biggest stories as they happen!",
 
 	draw: function() {
@@ -387,9 +413,13 @@ let news = {
 		if (this.messagePos > 560 + textWidth(this.message)) {
 			this.messagePos = 0;
 
-			let nextMessage = Math.floor(Math.random() * newsStories.length);
-			this.message = newsStories[nextMessage].story;
-			if (newsStories[nextMessage].remove) newsStories.splice(nextMessage, 1);
+			if(this.storyIndex != false) {
+				newsStories[this.storyIndex].consequence();
+				if (newsStories[this.storyIndex].remove) newsStories.splice(this.storyIndex, 1);
+			}
+
+			this.storyIndex = Math.floor(Math.random() * newsStories.length);
+			this.message = newsStories[this.storyIndex].story;			
 		}
 
 		textAlign(CENTER);
@@ -415,13 +445,12 @@ let news = {
 
 
 // Game Variables
-
 let score = 1000;
 
 let chart = new Chart(100, 100, 1080, 400);
-let gold = new Stock("Gold", 93, 20, 0.3, "#FF7732", 240, 550);
-let oil = new Stock("Oil", 60, 60, 0.1, "#B125D9", 540, 550);
-let tech =  new Stock("Tech", 120, 40, -0.3, "#00AAFF", 840, 550);
+let gold = new Stock("Gold", 93, 20, 0.3, 60, 250, "#FF7732", 240, 550);
+let oil = new Stock("Oil", 60, 60, 0.1, 30, 150, "#B125D9", 540, 550);
+let tech =  new Stock("Tech", 120, 40, -0.3, 20, 200, "#00AAFF", 840, 550);
 
 let coins = new EntityArray();
 coins.preDraw = function() {
@@ -429,7 +458,6 @@ coins.preDraw = function() {
 	strokeWeight(4);
 	stroke(180, 180, 0);
 }
-
 
 //Processing setup
 function setup() {
@@ -447,19 +475,31 @@ function setup() {
 
 //Processing draw/game loop
 function draw() {
-	background(backgroundCol);
 
-	news.draw();
-	drawScore();
-	date.draw();
-	
+	if (score < 1000000) {
+		background(backgroundCol);
+		news.draw();
+		drawScore();
+		date.draw();
+		oil.draw();
+		tech.draw();
+		gold.draw();
+		chart.draw();
+		coins.draw();
+		dollar.draw();
+	}else{
+		noStroke();
+		fill(color(0, 0, 0, 5));
+		rect(0, 0, canvasX, canvasY);
+		stroke(0);
+		strokeWeight(8);
+		fill(255);
+		rect(150, 340, 980, 120, 20);
+		textSize(50);
+		fill(0);
+		
+		strokeWeight(3);
+		text("Congratulations! You made $1,000,000!", canvasX / 2, canvasY / 2);
+	}
 
-	
-	oil.draw();
-	tech.draw();
-	gold.draw();
-	chart.draw();
-	coins.draw();
-
-	dollar.draw();
 }
