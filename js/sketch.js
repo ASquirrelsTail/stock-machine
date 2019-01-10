@@ -52,7 +52,7 @@ class Button {
 	}
 
 	draw() {
-		let mouseRange = createVector(mouseX - this.position.x, mouseY - this.position.y);
+		let mouseRange = createVector(((mouseX - view.offsetX) / view.scale) - this.position.x, ((mouseY - view.offsetY) / view.scale) - this.position.y);
 
 		let buttonColor = color(this.color);
 		let buttonHeight = 15;
@@ -385,7 +385,7 @@ let dollar = {
 		strokeWeight(2);
 		textSize(30);
 		text("$", 0, 2);
-		resetMatrix();
+		view.reset();
 	}
 }
 
@@ -467,8 +467,8 @@ let news = {
 		textAlign(CENTER);
 
 		fill(backgroundCol);
-		rect(0 , 0, 480, 80);
-		rect(1210 , 0, 70, 80);
+		rect(-1000, 0, 1480, 80);
+		rect(1210 , 0, 1070, 80);
 
 		stroke(0);
 		strokeWeight(4);
@@ -506,6 +506,7 @@ coins.preDraw = function() {
 //Processing setup
 function setup() {
 	createCanvas(canvasX, canvasY);
+	windowResized();
 	frameRate(targetFrameRate);
 	rectMode(CORNER);
 	ellipseMode(RADIUS);
@@ -519,7 +520,7 @@ function setup() {
 
 //Processing draw/game loop
 function draw() {
-
+	view.reset();
 	if (score < 1000000) {
 		background(backgroundCol);
 		news.draw();
@@ -534,7 +535,9 @@ function draw() {
 	}else{
 		noStroke();
 		fill(color(0, 0, 0, 5));
-		rect(0, 0, canvasX, canvasY);
+		resetMatrix()
+		rect(0, 0, windowWidth, windowHeight);
+		view.reset();
 		stroke(0);
 		strokeWeight(8);
 		fill(255);
@@ -548,4 +551,33 @@ function draw() {
 		restartButton.draw();
 	}
 
+}
+
+view = {
+	scale: 1,
+	offsetX: 0,
+	offsetY: 0,
+	reset: function() {
+		resetMatrix();
+		translate(this.offsetX, this.offsetY);
+		scale(this.scale, this.scale);
+	}
+}
+
+function windowResized() {
+	let gameAspect = canvasX / canvasY;
+	let windowAspect = windowWidth / windowHeight;
+	let newScale = 1;
+
+	if (windowAspect > gameAspect) {
+		newScale = windowHeight / canvasY;
+	}else{
+		newScale = windowWidth / canvasX;
+	}
+
+	view.scale = newScale;
+	view.offsetX = -((canvasX * newScale) - windowWidth) / 2;
+	view.offsetY = -((canvasY * newScale) - windowHeight) / 2;
+
+	resizeCanvas(windowWidth, windowHeight);
 }
