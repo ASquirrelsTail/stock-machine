@@ -1,4 +1,4 @@
-let newsStories = [
+let newsStoriesData = [
 	{
 		story: "CashMoney4Gold acquires the Crown Jewels",
 		remove: true,
