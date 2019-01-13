@@ -18,7 +18,7 @@ let newsStoriesData = [
 					oil.adjust(40, 15, 5);
 				}
 			}
-			newsStories.push(newStory);
+			news.newsStories.push(newStory);
 		}
 	},
 	{
@@ -43,10 +43,10 @@ let newsStoriesData = [
 							tech.adjust(30, 15, 5);
 						}
 					}
-					newsStories.push(newStory2);
+					news.newsStories.push(newStory2);
 				}
 			}
-			newsStories.push(newStory);
+			news.newsStories.push(newStory);
 		}
 	},
 	{
@@ -97,7 +97,7 @@ let newsStoriesData = [
 					gold.adjust(30, 15, 4);
 				}
 			}
-			newsStories.push(newStory);
+			news.newsStories.push(newStory);
 		}
 	},
 	{
@@ -112,7 +112,7 @@ let newsStoriesData = [
 					oil.adjust(40, -15, 4);
 				}
 			}
-			newsStories.push(newStory);
+			news.newsStories.push(newStory);
 		}
 	},
 	{
@@ -177,7 +177,7 @@ let newsStoriesData = [
 					tech.adjust(40, -15, 5);
 				}
 			}
-			newsStories.push(newStory);
+			news.newsStories.push(newStory);
 		}
 	},
 	{
